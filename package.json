@@ -1,0 +1,13 @@
+{
+  "name": "rinha-interpreter",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "rimraf ./dist && tsc",
+    "dev": "npm run build && node dist/src/index.js"
+  },
+  "dependencies": {
+    "typescript": "^5.2.2"
+  }
+}
