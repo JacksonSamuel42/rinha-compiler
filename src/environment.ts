@@ -30,13 +30,15 @@ export default class Environment {
 
     resolve(varname: string): Environment {
         if (this.variable.has(varname)) {
-            return this
+            return this;
         }
 
         if (this.parent == undefined) {
-            throw `Cannot resolve '${varname}' as it does exist.`
+            throw new Error(`Cannot resolve '${varname}' as it does not exist.`);
         }
 
-        return this.resolve(varname)
+        // Recursively call the parent's resolve method
+        return this.parent.resolve(varname);
     }
+
 }
