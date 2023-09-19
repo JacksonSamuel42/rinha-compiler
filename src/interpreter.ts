@@ -2,40 +2,34 @@ import { BinaryOp, File, Term } from "./ast";
 import Environment from "./environment";
 import { BoolVal, ClosureVal, IntVal, RuntimeValue, StrVal, TupleVal } from "./values";
 
-interface NewEnvironment {
-    [key: string]: Term;
-}
-
 function evaluate_binary_expr(left: IntVal, right: IntVal, operator: BinaryOp): RuntimeValue {
     switch (operator) {
         case "Add":
-            return { type: "Int", value: left.value + right.value } as IntVal;
+            return { type: "Int", value: left.value + right.value };
         case "Div":
-            return { type: "Int", value: left.value / right.value } as IntVal;
+            return { type: "Int", value: left.value / right.value };
         case "Sub":
-            return { type: "Int", value: left.value - right.value } as IntVal;
+            return { type: "Int", value: left.value - right.value };
         case "Mul":
-            return { type: "Int", value: left.value * right.value } as IntVal;
+            return { type: "Int", value: left.value * right.value };
         case "Rem":
-            return { type: "Int", value: left.value % right.value } as IntVal;
-        case "And":
-            return { type: "Int", value: left.value && right.value } as IntVal;
-        case "Or":
-            return { type: "Int", value: left.value || right.value } as IntVal;
+            return { type: "Int", value: left.value % right.value };
         case "Gt":
-            return { type: "Bool", value: left.value > right.value } as BoolVal;
+            return { type: "Int", value: left.value > right.value };
+        case "Or":
+            return { type: "Bool", value: Boolean(left.value) || Boolean(right.value) };
         case "And":
-            return { type: "Int", value: left.value && right.value } as IntVal;
+            return { type: "Bool", value: Boolean(left.value) && Boolean(right.value) };
         case "Lt":
-            return { type: "Bool", value: left.value < right.value } as BoolVal;
+            return { type: "Int", value: left.value < right.value };
         case "Gte":
-            return { type: "Bool", value: left.value >= right.value } as BoolVal;
+            return { type: "Int", value: left.value >= right.value };
         case "Lte":
-            return { type: "Bool", value: left.value <= right.value } as BoolVal;
+            return { type: "Int", value: left.value <= right.value };
         case "Neq":
-            return { type: "Bool", value: left.value != right.value } as BoolVal;
+            return { type: "Bool", value: Boolean(left.value) != Boolean(right.value) };
         case "Eq":
-            return { type: "Bool", value: left.value == right.value } as BoolVal;
+            return { type: "Bool", value: Boolean(left.value) == Boolean(right.value) };
         default:
             throw new Error(`Unsupported binary operator: ${operator}`);
     }
@@ -62,9 +56,10 @@ export function evaluate(node: Term, env: Environment): RuntimeValue {
         case "Let":
             const value = evaluate(node.value, env)
             env.declareVar(node.name.text, value)
-            return evaluate(node.value, env)
+            return evaluate(node.next, env)
         case "If":
-            if (node.condition)
+            const condition = evaluate(node.condition, env)
+            if (condition.value == true)
                 return evaluate(node.then, env)
             else
                 return evaluate(node.otherwise, env)
@@ -74,7 +69,7 @@ export function evaluate(node: Term, env: Environment): RuntimeValue {
             return evaluate_binary_expr(lhs as IntVal, rhs as IntVal, node.op)
         case "Print":
             const printedValue = evaluate(node.value, env);
-            console.log(printedValue);
+            console.log(printedValue.value);
             return printedValue;
         case "Tuple":
             const firstValue = evaluate(node.first, env);
@@ -92,30 +87,38 @@ export function evaluate(node: Term, env: Environment): RuntimeValue {
                 return tupleSecondVal.snd
             else
                 throw new Error("Trying to access 'second' of a non-tuple");
-        // case "Call":
-        //     const callee = evaluate(node.callee, env);
-        //     if (typeof callee === "function") {
-        //         const args = node.arguments.map(arg => evaluate(arg, env));
-        //         const newEnv: NewEnvironment = {};
-        //         for (let i = 0; i < node.arguments.length; i++) {
-        //             if (node.callee.kind === "Function" && node.callee.parameters[i]) {
-        //                 newEnv[node.callee.parameters[i].text] = args[i];
-        //             }
-        //         }
-        //         return evaluate(node.callee.body, { ...env, ...newEnv });
-        //     } else {
-        //         throw new Error("Trying to call a non-function");
-        //     }
-        // case "Function":
-        //     return {
-        //         type: "Function",
-        //         value: {
-        //             parameters: node.parameters,
-        //             body: node.value,
-        //             env
-        //         } 
-        //     };
+        case "Call":
+            const calleeValue = evaluate(node.callee, env)
+            const callee = calleeValue as ClosureVal
+
+            if (callee.type !== "Closure") throw new Error("Attempting to call a non-function value.");
+
+            // Check if the number of arguments matches the number of parameters
+            if (node.arguments.length !== callee.parameters.length) {
+                throw new Error("Number of arguments does not match the number of parameters.");
+            }
+
+            // Create a new environment for the function call with the parameters bound to the arguments
+            const callEnv = new Environment(callee.env);
+
+            for (let i = 0; i < node.arguments.length; i++) {
+                const argValue = evaluate(node.arguments[i], env);
+                const parameter = callee.parameters[i];
+                callEnv.declareVar(parameter.text, argValue);
+            }
+
+            // Evaluate the function body in the new environment
+            return evaluate(callee.body, callEnv);
+
+        case "Function":
+            return {
+                type: "Closure",
+                parameters: node.parameters,
+                body: node.value,
+                env: env,
+            } as ClosureVal;
+
         default:
-            throw new Error(`Unsupported node kind: ${node.kind}`);
+            throw new Error(`Unsupported node : ${node}`);
     }
 }

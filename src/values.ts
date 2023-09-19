@@ -1,4 +1,4 @@
-import { Term } from "./ast";
+import { Parameter, Term } from "./ast";
 import Environment from "./environment";
 
 export type ValueTypes =
@@ -12,6 +12,7 @@ export type ValueTypes =
 
 export interface RuntimeValue {
     type: ValueTypes
+    value?: any
 }
 
 export interface NullVal extends RuntimeValue {
@@ -40,13 +41,9 @@ export interface TupleVal extends RuntimeValue {
     snd: RuntimeValue
 }
 
-export type Closure = {
-    body: Term,
-    parameters: string[]
-    env: Environment
-}
-
 export interface ClosureVal extends RuntimeValue {
     type: "Closure";
-    value: Closure;
+    parameters: Parameter[];
+    body: Term;
+    env: Environment;
 }
