@@ -1,39 +1,7 @@
-import { BinaryOp, File, Term } from "./ast";
+import { File, Term } from "./ast";
 import Environment from "./environment";
+import { eval_binary_expr } from "./expressions";
 import { BoolVal, ClosureVal, IntVal, RuntimeValue, StrVal, TupleVal } from "./values";
-
-function evaluate_binary_expr(left: IntVal, right: IntVal, operator: BinaryOp): RuntimeValue {
-    switch (operator) {
-        case "Add":
-            return { type: "Int", value: left.value + right.value };
-        case "Div":
-            return { type: "Int", value: left.value / right.value };
-        case "Sub":
-            return { type: "Int", value: left.value - right.value };
-        case "Mul":
-            return { type: "Int", value: left.value * right.value };
-        case "Rem":
-            return { type: "Int", value: left.value % right.value };
-        case "Gt":
-            return { type: "Int", value: left.value > right.value };
-        case "Or":
-            return { type: "Bool", value: Boolean(left.value) || Boolean(right.value) };
-        case "And":
-            return { type: "Bool", value: Boolean(left.value) && Boolean(right.value) };
-        case "Lt":
-            return { type: "Int", value: left.value < right.value };
-        case "Gte":
-            return { type: "Int", value: left.value >= right.value };
-        case "Lte":
-            return { type: "Int", value: left.value <= right.value };
-        case "Neq":
-            return { type: "Bool", value: Boolean(left.value) != Boolean(right.value) };
-        case "Eq":
-            return { type: "Bool", value: Boolean(left.value) == Boolean(right.value) };
-        default:
-            throw new Error(`Unsupported binary operator: ${operator}`);
-    }
-}
 
 export let interpret = (file: File) => {
     const env = new Environment()
@@ -64,9 +32,7 @@ export function evaluate(node: Term, env: Environment): RuntimeValue {
             else
                 return evaluate(node.otherwise, env)
         case "Binary":
-            const lhs = evaluate(node.lhs, env)
-            const rhs = evaluate(node.rhs, env)
-            return evaluate_binary_expr(lhs as IntVal, rhs as IntVal, node.op)
+            return eval_binary_expr(node, env)
         case "Print":
             const printedValue = evaluate(node.value, env);
             console.log(printedValue.value);
